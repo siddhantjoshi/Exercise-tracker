@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Weekly Workout Tracker</title>
+<style>
+  :root{
+    --bg:#f6f7f8;
+    --card:#fff;
+    --muted:#6b6f76;
+    --accent:#111827;
+    --accent-2:#0f1724;
+    --border:#e6e9ee;
+    --ok:#10b981;
+    --highlight:#10b981; /* selected day color */
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter, Roboto, "Helvetica Neue", Arial;
+    background:var(--bg);
+    color:var(--accent-2);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    padding:18px;
+  }
+
+  header{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    justify-content:space-between;
+    max-width:980px;
+    margin: 0 auto 14px;
+  }
+
+  h1{
+    margin:0;
+    font-weight:600;
+    font-size:18px;
+    letter-spacing:.2px;
+  }
+
+  .top-actions{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .btn{
+    background:var(--accent);
+    color:white;
+    border:none;
+    padding:8px 12px;
+    border-radius:8px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .btn.ghost{
+    background:transparent;color:var(--accent);border:1px solid var(--border);
+  }
+  .btn.warn{background:#ef4444}
+  .container{
+    max-width:980px;
+    margin: 0 auto;
+  }
+
+  /* day selector */
+  .day-row{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:12px;
+    margin-bottom:6px;
+    scroll-behavior:smooth;
+  }
+  .day-tab{
+    white-space:nowrap;
+    background: #fff;
+    border-radius:10px;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    cursor:pointer;
+    flex:0 0 auto;
+    min-width:88px;
+    text-align:center;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s;
+  }
+  .day-tab.active{
+    box-shadow:0 10px 24px rgba(16,185,129,0.12);
+    border:1px solid rgba(16,185,129,0.18);
+    transform:translateY(-6px) scale(1.04);
+    background: var(--highlight);
+    color: white;
+  }
+  .day-sub{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    margin-top:6px;
+  }
+
+  .selected-info{
+    text-align:center;
+    margin: 6px 0 12px;
+    font-weight:600;
+    color:var(--accent-2);
+  }
+
+  /* card */
+  .card{
+    background:var(--card);
+    border-radius:14px;
+    padding:14px;
+    box-shadow:0 6px 22px rgba(16,24,40,0.04);
+    border:1px solid var(--border);
+    max-width:980px;
+    margin-bottom:18px;
+  }
+
+  .day-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .day-title{font-weight:600;font-size:16px}
+  .note{font-size:13px;color:var(--muted)}
+
+  .exercises-list{display:flex;flex-direction:column;gap:10px}
+
+  /* Exercise row (mobile-first) */
+  .exercise-row{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    padding:10px;
+    border-radius:10px;
+    background:linear-gradient(180deg, rgba(0,0,0,0.01), rgba(0,0,0,0.01));
+    border:1px solid rgba(0,0,0,0.03);
+  }
+  .col-left{
+    width:46px;
+    flex:0 0 46px;
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    padding-top:4px;
+  }
+  .col-left input[type="checkbox"]{
+    width:20px;height:20px;transform:scale(1.15);
+    cursor:pointer;
+  }
+  .col-right{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .ex-name{
+    font-weight:600;
+    font-size:15px;
+  }
+  .mini-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  select,input[type="number"], input[type="text"]{
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    font-size:13px;
+    outline:none;
+    min-height:38px;
+  }
+  .mini-row select{flex:1;min-width:140px}
+  .mini-row input[type="number"]{width:110px}
+  .add-btn{
+    align-self:flex-start;
+    padding:8px 12px;
+    font-size:13px;
+    border-radius:8px;
+    border:none;
+    background:var(--accent);
+    color:#fff;
+    cursor:pointer;
+  }
+  .delete-btn{
+    align-self:flex-start;
+    padding:8px 10px;
+    font-size:13px;
+    border-radius:8px;
+    border:none;
+    background:#ef4444;
+    color:white;
+    cursor:pointer;
+    margin-left:8px;
+  }
+
+  /* desktop: inline layout for each exercise */
+  @media(min-width:820px){
+    .exercise-row{
+      align-items:center;
+      gap:12px;
+    }
+    .col-left{align-items:center;padding-top:0}
+    .col-right{flex-direction:row;align-items:center;gap:12px}
+    .ex-name{flex:1;font-size:15px}
+    .mini-row{display:flex;gap:8px;align-items:center}
+    .mini-row select{min-width:170px}
+    .mini-row input[type="number"]{width:90px}
+    .add-btn{height:36px}
+  }
+
+  /* small tweaks */
+  .controls-row{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+  .small{font-size:13px;color:var(--muted)}
+  .history{
+    margin-top:14px;
+    border-top:1px dashed var(--border);
+    padding-top:12px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .history .info{font-size:13px;color:var(--muted)}
+  .history button{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer}
+  /* history modal */
+  .modal{
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(12,12,12,0.35);z-index:999;
+  }
+  .modal.show{display:flex}
+  .modal-card{
+    width:90%;max-width:820px;background:#fff;border-radius:12px;padding:16px;max-height:80vh;overflow:auto;
+  }
+  pre{background:#f3f4f6;padding:12px;border-radius:8px;overflow:auto}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Weekly Workout Tracker</h1>
+  <div class="top-actions">
+    <button class="btn" id="exportBtn">Export JSON</button>
+    <button class="btn ghost" id="viewHistory">View History</button>
+    <button class="btn warn" id="clearBtn">Clear All</button>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- day selector -->
+  <div class="day-row" id="dayRow"></div>
+  <div class="selected-info" id="selectedInfo">Selected Day: Day 1</div>
+
+  <!-- main card -->
+  <div class="card" id="card">
+    <!-- populated by JS -->
+  </div>
+
+  <div class="history">
+    <div class="info small">Saved only when you press <strong>Add</strong> for an exercise. Data is stored locally on this device.</div>
+    <div>
+      <button onclick="downloadJSON()" class="btn ghost">Download .json</button>
+    </div>
+  </div>
+</div>
+
+<!-- history modal -->
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <strong>Workout History (local)</strong>
+      <div>
+        <button onclick="closeModal()" class="btn ghost">Close</button>
+      </div>
+    </div>
+    <div id="historyContent"></div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   Config & default program
+   ========================= */
+const program = {
+  1: { title: "Day 1", sub: "Upper Body — Chest / Back / Shoulders", exercises: [
+    "Flat Dumbbell Press","Pull-Ups (Wide Grip)","Incline Dumbbell Press","Single Arm DB Row"
+  ]},
+  2: { title: "Day 2", sub: "Lower Body — Quads / Glutes", exercises: [
+    "Dumbbell Lunges","Goblet Squat","Leg Press","Standing Calf Raises"
+  ]},
+  3: { title: "Day 3", sub: "Core / Mobility / Stamina", exercises: [
+    "Hanging Leg Raises","Farmer Walk","Plank / Side Plank","Russian Twists"
+  ]},
+  4: { title: "Day 4", sub: "Upper Body — Arms / Back", exercises: [
+    "Underhand Row","Bicep Curls","Overhead Tricep Extension","Dumbbell Pullover"
+  ]},
+  5: { title: "Day 5", sub: "Lower Body — Hamstrings / Glutes", exercises: [
+    "Romanian Deadlift","Step-Ups (Weighted)","Glute Bridges / Hip Thrust","Reverse Lunges"
+  ]}
+};
+
+const EQUIP_OPTIONS = ["Bodyweight","Dumbbell","Barbell","Kettlebell","Bands","Machine","Other"];
+
+/* =========================
+   Local storage "DB"
+   Structure:
+   {
+     history: { "YYYY-MM-DD": { day1: [entries...], day2: [...] } },
+     userExercises: { day1: ["Custom1"], day2: [...] }
+   }
+   ========================= */
+const DB_KEY = "workoutDB";
+
+function readDB(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(!raw){
+      const init = { history: {}, userExercises: { day1:[], day2:[], day3:[], day4:[], day5:[] } };
+      localStorage.setItem(DB_KEY, JSON.stringify(init));
+      return init;
+    }
+    return JSON.parse(raw);
+  }catch(e){
+    const init = { history: {}, userExercises: { day1:[], day2:[], day3:[], day4:[], day5:[] } };
+    localStorage.setItem(DB_KEY, JSON.stringify(init));
+    return init;
+  }
+}
+function writeDB(db){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
+/* =========================
+   UI helpers & rendering
+   ========================= */
+const dayRowEl = document.getElementById("dayRow");
+const cardEl = document.getElementById("card");
+const selectedInfo = document.getElementById("selectedInfo");
+
+let activeDay = 1;
+
+// build day tabs
+for(let d=1; d<=5; d++){
+  const tab = document.createElement("div");
+  tab.className = "day-tab";
+  tab.dataset.day = d;
+  tab.innerHTML = `<div>${program[d].title}</div><span class="day-sub">${program[d].sub}</span>`;
+  tab.onclick = ()=>{ setActiveDay(d) };
+  dayRowEl.appendChild(tab);
+}
+
+// select day
+function setActiveDay(day){
+  activeDay = day;
+  // highlight
+  document.querySelectorAll(".day-tab").forEach(t=>t.classList.toggle("active", +t.dataset.day===day));
+  // scroll center
+  const el = document.querySelector(`.day-tab[data-day="${day}"]`);
+  if(el) el.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  // label
+  selectedInfo.textContent = `Selected Day: Day ${day}`;
+  renderCard();
+}
+
+// render card for active day
+function renderCard(){
+  const db = readDB();
+  const dayObj = program[activeDay];
+  const userExtras = db.userExercises[`day${activeDay}`] || [];
+  const allExercises = [...dayObj.exercises, ...userExtras];
+
+  const header = `
+    <div class="day-header">
+      <div>
+        <div class="day-title">${dayObj.title}</div>
+        <div class="note">${dayObj.sub}</div>
+      </div>
+      <div class="small">Sets: 3–4 | Reps: 8–12 (adjust by exercise)</div>
+    </div>
+  `;
+
+  let exHtml = `<div class="exercises-list" id="exList">`;
+  allExercises.forEach((ex, idx) => {
+    const isCustom = idx >= dayObj.exercises.length;
+    exHtml += getExerciseRowHTML(ex, idx, isCustom);
+  });
+  // blank row for adding new custom exercise
+  exHtml += getExerciseRowHTML("", allExercises.length, false, true);
+  exHtml += `</div>`;
+
+  cardEl.innerHTML = `<div>${header}${exHtml}</div>`;
+  attachRowEvents();
+  // mark active
+  document.querySelectorAll(".day-tab").forEach(t=>t.classList.toggle("active", +t.dataset.day===activeDay));
+}
+
+// returns HTML for an exercise row
+// params: name, idx, isCustom boolean, isBlank boolean (if true render insertion row)
+function getExerciseRowHTML(name, idx, isCustom=false, isBlank=false){
+  const placeholder = isBlank ? "Add exercise name..." : "";
+  const checkedId = `chk_${activeDay}_${idx}`;
+  const nameId = `name_${activeDay}_${idx}`;
+  const equipId = `equip_${activeDay}_${idx}`;
+  const weightId = `wt_${activeDay}_${idx}`;
+  const addBtnId = `add_${activeDay}_${idx}`;
+  const delBtnId = `del_${activeDay}_${idx}`;
+
+  // if blank row -> empty name input
+  const valueAttr = isBlank ? "" : `value="${escapeHtml(name)}"`;
+
+  // build options
+  const opts = EQUIP_OPTIONS.map(o=>`<option value="${o}">${o}</option>`).join("");
+
+  // compose HTML
+  return `
+    <div class="exercise-row" data-idx="${idx}">
+      <div class="col-left">
+        <input type="checkbox" id="${checkedId}" />
+      </div>
+      <div class="col-right">
+        <div class="ex-name">
+          <input type="text" id="${nameId}" placeholder="${placeholder}" ${valueAttr}
+            style="width:100%;border:none;background:transparent;font-weight:600;font-size:15px;outline:none" ${isBlank?"":""}/>
+        </div>
+        <div class="mini-row">
+          <select id="${equipId}">${opts}</select>
+          <input type="number" id="${weightId}" placeholder="Weight (kg)" min="0" />
+        </div>
+        <div>
+          <button class="add-btn" id="${addBtnId}">${isBlank? "Create" : "Add"}</button>
+          ${isCustom ? `<button class="delete-btn" id="${delBtnId}">🗑</button>` : ""}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* =========================
+   Row interaction
+   ========================= */
+function attachRowEvents(){
+  const rows = document.querySelectorAll(".exercise-row");
+  rows.forEach(row=>{
+    const idx = parseInt(row.dataset.idx, 10);
+    const chk = row.querySelector(`#chk_${activeDay}_${idx}`);
+    const name = row.querySelector(`#name_${activeDay}_${idx}`);
+    const equip = row.querySelector(`#equip_${activeDay}_${idx}`);
+    const weight = row.querySelector(`#wt_${activeDay}_${idx}`);
+    const addBtn = row.querySelector(`#add_${activeDay}_${idx}`);
+    const delBtn = row.querySelector(`#del_${activeDay}_${idx}`);
+
+    // identify if this is blank row (name empty and index >= defaults+user)
+    const db = readDB();
+    const defaults = program[activeDay].exercises.length;
+    const userExtras = db.userExercises[`day${activeDay}`] || [];
+    const totalCount = defaults + userExtras.length;
+    const isBlankRow = idx === totalCount; // last slot is blank
+
+    // Add / Create behavior
+    if(addBtn){
+      addBtn.onclick = ()=>{
+        const exName = (name.value || name.placeholder || "").trim();
+        if(!exName){ alert("Please provide an exercise name."); name.focus(); return; }
+
+        if(isBlankRow){
+          // create a new custom exercise for this day (persist)
+          const db2 = readDB();
+          db2.userExercises[`day${activeDay}`] = db2.userExercises[`day${activeDay}`] || [];
+          db2.userExercises[`day${activeDay}`].push(exName);
+          writeDB(db2);
+          // feedback and re-render
+          addBtn.innerText = "Created";
+          addBtn.style.background = "var(--ok)";
+          setTimeout(()=>{ addBtn.innerText = "Create"; addBtn.style.background = ""; renderCard(); }, 700);
+          return;
+        }
+
+        // otherwise save a session (record)
+        const doneVal = chk.checked;
+        const equipVal = equip.value;
+        const weightVal = weight.value ? Number(weight.value) : null;
+        saveExerciseSession(exName, equipVal, weightVal, doneVal, idx);
+        addBtn.innerText = "Saved";
+        addBtn.style.background = "var(--ok)";
+        setTimeout(()=>{ addBtn.innerText = "Add"; addBtn.style.background = ""; }, 700);
+      };
+    }
+
+    // Delete custom exercise
+    if(delBtn){
+      delBtn.onclick = ()=>{
+        if(!confirm("Delete this custom exercise from this day? This removes it permanently.")) return;
+        const exName = (name.value || name.placeholder || "").trim();
+        const db3 = readDB();
+        db3.userExercises[`day${activeDay}`] = (db3.userExercises[`day${activeDay}`] || []).filter(n => n !== exName);
+        writeDB(db3);
+        renderCard();
+      };
+    }
+  });
+}
+
+/* =========================
+   Save a single completed exercise instance to local history
+   ========================= */
+function saveExerciseSession(exerciseName, equipment, weight, done, idx){
+  const db = readDB();
+  const dateKey = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+  if(!db.history[dateKey]) db.history[dateKey] = {};
+  const dayKey = `day${activeDay}`;
+  if(!db.history[dateKey][dayKey]) db.history[dateKey][dayKey] = [];
+
+  const item = {
+    time: new Date().toISOString(),
+    day: activeDay,
+    title: program[activeDay].title,
+    sub: program[activeDay].sub,
+    exercise: exerciseName,
+    equipment: equipment,
+    weight: weight,
+    done: !!done,
+    index: idx
+  };
+  db.history[dateKey][dayKey].push(item);
+  writeDB(db);
+}
+
+/* =========================
+   History UI & export
+   ========================= */
+const modal = document.getElementById("modal");
+const historyContent = document.getElementById("historyContent");
+
+document.getElementById("viewHistory").onclick = openModal;
+document.getElementById("exportBtn").onclick = downloadJSON;
+document.getElementById("clearBtn").onclick = ()=>{
+  if(confirm("Clear all saved workout data? This cannot be undone.")){
+    localStorage.removeItem(DB_KEY);
+    // re-init
+    readDB();
+    renderCard();
+    alert("Cleared.");
+  }
+};
+
+function openModal(){
+  const db = readDB();
+  const hist = db.history || {};
+  let html = "";
+  const dates = Object.keys(hist).sort((a,b)=>b.localeCompare(a)); // newest first
+  if(dates.length===0){
+    html = `<div class="small">No saved data yet. Use Add to record exercise sessions.</div>`;
+  }else{
+    for(const d of dates){
+      html += `<div style="margin-bottom:10px"><strong>${d}</strong>`;
+      const days = hist[d];
+      for(const dayKey of Object.keys(days)){
+        html += `<div style="margin-left:8px;margin-top:6px"><em>${dayKey}</em><ul style="margin:6px 0 12px 18px">`;
+        for(const entry of days[dayKey]){
+          html += `<li style="margin-bottom:6px">
+            <strong>${escapeHtml(entry.exercise)}</strong> — ${escapeHtml(entry.equipment || "")}${entry.weight?`, ${entry.weight}kg`:''} ${entry.done?'<span style="color:var(--ok)">✓</span>':''}
+            <div style="font-size:12px;color:var(--muted)">${new Date(entry.time).toLocaleTimeString()}</div>
+          </li>`;
+        }
+        html += `</ul></div>`;
+      }
+      html += `</div>`;
+    }
+  }
+  historyContent.innerHTML = html;
+  modal.classList.add("show");
+}
+function closeModal(){ modal.classList.remove("show"); }
+
+function downloadJSON(){
+  const db = readDB();
+  const json = JSON.stringify(db, null, 2);
+  const blob = new Blob([json], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `workout_db_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* =========================
+   Helpers
+   ========================= */
+function escapeHtml(str){
+  if(!str) return "";
+  return String(str).replace(/[&<>"]/g, function(s){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s]); });
+}
+
+/* =========================
+   Init
+   ========================= */
+setActiveDay(1);
+
+</script>
+
+</body>
+</html>
