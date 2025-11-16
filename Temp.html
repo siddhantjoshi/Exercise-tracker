@@ -118,16 +118,6 @@
     margin-bottom:18px;
   }
 
-  .day-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    margin-bottom:12px;
-  }
-  .day-title{font-weight:600;font-size:16px}
-  .note{font-size:13px;color:var(--muted)}
-
   .exercises-list{display:flex;flex-direction:column;gap:10px}
 
   /* Exercise row (mobile-first) */
@@ -165,7 +155,9 @@
   .mini-row{
     display:flex;
     gap:8px;
-    flex-wrap:wrap;
+    flex-wrap:nowrap;          /* force single row */
+    overflow-x:auto;          /* allow horizontal scroll on narrow screens */
+    align-items:center;
   }
   select,input[type="number"], input[type="text"]{
     padding:8px 10px;
@@ -176,7 +168,17 @@
     min-height:38px;
   }
   .mini-row select{flex:1;min-width:140px}
-  .mini-row input[type="number"]{width:110px}
+  .mini-row input[type="number"]{width:90px;min-width:70px}
+  .kg-label{
+    padding:6px 8px;
+    border-radius:6px;
+    background:#fff;
+    border:1px solid var(--border);
+    color:var(--muted);
+    font-size:13px;
+    margin-left:4px;
+    white-space:nowrap;
+  }
   .add-btn{
     align-self:flex-start;
     padding:8px 12px;
@@ -193,10 +195,11 @@
     font-size:13px;
     border-radius:8px;
     border:none;
-    background:#ef4444;
-    color:white;
+    background:transparent;
+    color:#c0392b;
     cursor:pointer;
     margin-left:8px;
+    font-weight:700;
   }
 
   /* desktop: inline layout for each exercise */
@@ -208,7 +211,7 @@
     .col-left{align-items:center;padding-top:0}
     .col-right{flex-direction:row;align-items:center;gap:12px}
     .ex-name{flex:1;font-size:15px}
-    .mini-row{display:flex;gap:8px;align-items:center}
+    .mini-row{display:flex;gap:8px;align-items:center;flex-wrap:nowrap;overflow:visible}
     .mini-row select{min-width:170px}
     .mini-row input[type="number"]{width:90px}
     .add-btn{height:36px}
@@ -372,15 +375,7 @@ function renderCard(){
   const userExtras = db.userExercises[`day${activeDay}`] || [];
   const allExercises = [...dayObj.exercises, ...userExtras];
 
-  const header = `
-    <div class="day-header">
-      <div>
-        <div class="day-title">${dayObj.title}</div>
-        <div class="note">${dayObj.sub}</div>
-      </div>
-      <div class="small">Sets: 3–4 | Reps: 8–12 (adjust by exercise)</div>
-    </div>
-  `;
+  // removed card-internal day header (per request) to save space
 
   let exHtml = `<div class="exercises-list" id="exList">`;
   allExercises.forEach((ex, idx) => {
@@ -391,7 +386,7 @@ function renderCard(){
   exHtml += getExerciseRowHTML("", allExercises.length, false, true);
   exHtml += `</div>`;
 
-  cardEl.innerHTML = `<div>${header}${exHtml}</div>`;
+  cardEl.innerHTML = `${exHtml}`;
   attachRowEvents();
   // mark active
   document.querySelectorAll(".day-tab").forEach(t=>t.classList.toggle("active", +t.dataset.day===activeDay));
@@ -427,11 +422,12 @@ function getExerciseRowHTML(name, idx, isCustom=false, isBlank=false){
         </div>
         <div class="mini-row">
           <select id="${equipId}">${opts}</select>
-          <input type="number" id="${weightId}" placeholder="Weight (kg)" min="0" />
+          <input type="number" id="${weightId}" placeholder="Weight" min="0" />
+          <span class="kg-label">kg</span>
         </div>
         <div>
           <button class="add-btn" id="${addBtnId}">${isBlank? "Create" : "Add"}</button>
-          ${isCustom ? `<button class="delete-btn" id="${delBtnId}">🗑</button>` : ""}
+          ${isCustom ? `<button class="delete-btn" id="${delBtnId}">❌</button>` : ""}
         </div>
       </div>
     </div>
