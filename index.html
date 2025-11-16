@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Weekly Workout Tracker</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        margin: 0;
+        padding: 20px;
+        color: #222;
+    }
+
+    h1 {
+        text-align: center;
+        font-weight: 300;
+        margin-bottom: 30px;
+    }
+
+    .day-selector {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .day-selector button {
+        padding: 10px 18px;
+        border: none;
+        background: #ddd;
+        cursor: pointer;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+    .day-selector button.active {
+        background: #222;
+        color: white;
+    }
+
+    .card {
+        max-width: 600px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 16px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transition: 0.3s;
+    }
+
+    .highlight {
+        transform: scale(1.03);
+        border: 2px solid #222;
+    }
+
+    .exercise {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+
+    .exercise label {
+        flex: 1;
+    }
+
+    .exercise input[type="checkbox"] {
+        transform: scale(1.3);
+        margin-right: 10px;
+    }
+
+    .controls {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 12px;
+    }
+
+    select, input {
+        padding: 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+
+</style>
+</head>
+<body>
+
+<h1>Weekly Workout Tracker</h1>
+
+<div class="day-selector">
+    <button onclick="loadDay(1)">Day 1</button>
+    <button onclick="loadDay(2)">Day 2</button>
+    <button onclick="loadDay(3)">Day 3</button>
+    <button onclick="loadDay(4)">Day 4</button>
+    <button onclick="loadDay(5)">Day 5</button>
+</div>
+
+<div id="card" class="card"></div>
+
+<script>
+// Workout structure
+const workouts = {
+    1: ["Flat Dumbbell Press", "Pull-Ups", "Incline Dumbbell Press"],
+    2: ["Dumbbell Lunges", "Goblet Squat", "Leg Press"],
+    3: ["Hanging Leg Raises", "Farmer Walk", "Plank / Side Plank"],
+    4: ["Underhand Row", "Bicep Curls", "Overhead Tricep Extension"],
+    5: ["Romanian Deadlift", "Step-Ups", "Glute Bridges"]
+};
+
+// Load saved progress
+function getSaved() {
+    return JSON.parse(localStorage.getItem("workoutData") || "{}");
+}
+
+// Save progress
+function saveData(data) {
+    localStorage.setItem("workoutData", JSON.stringify(data));
+}
+
+// Render specific day card
+function loadDay(day) {
+    const saved = getSaved();
+    const card = document.getElementById("card");
+
+    document.querySelectorAll(".day-selector button").forEach(btn => btn.classList.remove("active"));
+    document.querySelectorAll(".day-selector button")[day-1].classList.add("active");
+
+    const today = new Date().getDay(); // Sunday = 0
+    const highlight = today === (day % 7);
+
+    card.className = highlight ? "card highlight" : "card";
+
+    let html = `<h2>Day ${day}</h2>`;
+
+    workouts[day].forEach((exercise, index) => {
+        const key = `${day}_${index}`;
+        const checked = saved[key]?.done ? "checked" : "";
+
+        html += `
+        <div class="exercise">
+            <label><input type="checkbox" onchange="toggleExercise(${day},${index},this.checked)" ${checked}> ${exercise}</label>
+        </div>`;
+    });
+
+    // Equipment + weight section
+    const equipKey = `equip_${day}`;
+    const weightKey = `weight_${day}`;
+
+    html += `
+        <div class="controls">
+            <div>
+                <label>Equipment:</label>
+                <select onchange="saveEquip(${day}, this.value)">
+                    <option value="">Select</option>
+                    <option value="Dumbbell" ${saved[equipKey]==="Dumbbell"?"selected":""}>Dumbbell</option>
+                    <option value="Barbell" ${saved[equipKey]==="Barbell"?"selected":""}>Barbell</option>
+                </select>
+            </div>
+
+            <div>
+                <label>Weight:</label>
+                <input type="number" placeholder="kg" value="${saved[weightKey] || ""}"
+                       oninput="saveWeight(${day}, this.value)">
+            </div>
+        </div>
+    `;
+
+    card.innerHTML = html;
+}
+
+// Checkbox handler
+function toggleExercise(day, index, done) {
+    const saved = getSaved();
+    const key = `${day}_${index}`;
+    saved[key] = { done };
+    saveData(saved);
+}
+
+// Save equipment
+function saveEquip(day, value) {
+    const saved = getSaved();
+    saved[`equip_${day}`] = value;
+    saveData(saved);
+}
+
+// Save weight
+function saveWeight(day, value) {
+    const saved = getSaved();
+    saved[`weight_${day}`] = value;
+    saveData(saved);
+}
+
+// Load Day 1 on start
+loadDay(1);
+</script>
+
+</body>
+</html>
